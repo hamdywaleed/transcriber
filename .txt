@@ -1,0 +1,80 @@
+
+from openai import OpenAI
+import os
+
+# Set up OpenAI API key
+OpenAI.api_key="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"
+
+def transcribe_audio_with_prompt(file_path, transcription_prompt):
+    """
+    Transcribes an audio file using OpenAI's Whisper API with a custom transcription prompt.
+    """
+    try:
+        with open(file_path, "rb") as audio_file:
+            transcript_response = OpenAI.Audio.transcribe(
+                model="whisper-1",
+                file=audio_file,
+                prompt=transcription_prompt
+            )
+        return transcript_response['text']
+    except Exception as e:
+        print(f"Error during transcription: {e}")
+        return None
+
+def summarize_text_with_prompt(transcription, summary_prompt):
+    """
+    Summarizes the transcription using a custom GPT prompt.
+    """
+    try:
+        summary_response = OpenAI.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a highly accurate assistant for summarizing transcripts."},
+                {"role": "user", "content": f"{summary_prompt}\n\n{transcription}"}
+            ]
+        )
+        return summary_response['choices'][0]['message']['content']
+    except Exception as e:
+        print(f"Error during summarization: {e}")
+        return None
+
+if __name__ == "__main__":
+    # Path to your audio file
+    audio_file_path = r"D:\BEETLEWARE\arab.wav"
+
+    # Step 1: Define Your Prompts
+    transcription_prompt = """
+            Please transcribe this audio file and provide a clear, well-formatted transcription.
+            The audio is a WAV file containing speech that needs to be transcribed accurately.
+            pUT IN YOUR CONCERNS TO DEFINE THE SPEAKER, I DON'T MEAN DIARIZATION,but i need an inform that a different speaker is here, transcribe the meeting until different one speak and then split it , and start the transcribtion of the next and so on ALSO FORMAT THE TRANSCRIBE AS A dialogue with timestamps
+            Please maintain natural speech patterns and include proper punctuation. result should be in arabic
+            """
+    summary_prompt = """ This is a business meeting
+                you role is an experienced minute taker
+
+
+                THE INPUT: you will be given a meeting and you should do your job as the most experienced minute taker do
+
+                The Expected output is : all important information, dates, decisions , tasks and deadlines mentioned in the meeting. ensure documentation of the decisions and actions taken in the meeting, which facilitates their follow-up and implementation
+
+                Please provide a comprehensive summary of the audio content. NOT ALL content just summarize the meeting in the points i have told you above
+                Focus on the main points discussed and key takeaways.
+                Format the summary in clear paragraphs with proper punctuation. result should be in arabic.
+                """
+    # Step 2: Transcribe the Audio
+    print("Transcribing audio...")
+    transcript = transcribe_audio_with_prompt(audio_file_path, transcription_prompt)
+    output_file = r"D:\BEETLEWARE\transcriber\gpt_transc.txt"  #
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(transcript)
+        print(f"Transcription has been successfully written to {output_file}")
+
+    if transcript:
+        summ=r"D:\BEETLEWARE\transcriber\gpt_summ.txt"
+        # Step 3: Summarize the Transcription
+        summary = summarize_text_with_prompt(transcript, summary_prompt)
+
+        if summary:
+            with open(summ, "w", encoding="utf-8") as f:
+                f.write(summary)
+                print(f"Summary has been successfully written to {summ}")
